@@ -1,5 +1,5 @@
 #ifndef ISRRunningPin
-    // A1/D16 - Red LED
+    // A1/D16 - Blue LED
     #define ISRRunningPin  16
 #endif
 
@@ -192,9 +192,6 @@ void setup()
       }
     }  
 
-    // call ISR - TC4_Handler 1000 times per second
-    // 1 msec
-    // setup_timer4(1000);
     // call ISR - TC4_Handler 100000 times per second
     setup_timer4(100000);
     // examples:
