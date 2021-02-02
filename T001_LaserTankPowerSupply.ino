@@ -1,11 +1,17 @@
-#ifndef ISRRunningPin
-    // A1/D16 - Blue LED
-    #define ISRRunningPin  16
+
+#ifndef VoltageMonitorPin
+    // A6 / D21
+    #define VoltageMonitorPin  A6
 #endif
 
 #ifndef LowVoltagePin
-    // A2/D17 - Red LED
-    #define LowVoltagePin  17
+    // D8 - Red LED
+    #define LowVoltagePin  8
+#endif
+
+#ifndef ISRRunningPin
+    // D9 - Blue LED
+    #define ISRRunningPin  9
 #endif
 
 // Battery
@@ -22,11 +28,11 @@ volatile int ISR_BatteryVoltage = 0;
 void sendBatteryStatus()
 { 
     // read the Battery Voltage
-    raw_read = analogRead(A6);
+    raw_read = analogRead(VoltageMonitorPin);
     BatteryVoltage = (((float)raw_read) * 11.1 / 1023);
     BatteryAverageBuild += BatteryVoltage;
 
-    // make the average
+    // make the Average
     // average is the last 10 samples
     BatteryAverageCount++;
     if(BatteryAverageCount == 10) {
@@ -163,7 +169,7 @@ void TC4_Handler()
 void setup()
 {
     // we use this led to show the background is running
-    // flased on and off every time we go through the background loop
+    // flash on and off every time we go through the background loop
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
@@ -178,7 +184,8 @@ void setup()
     //Serial port initialization
     Serial.begin(57600);
 
-    // get the initial battery status so we can preset the battery average until we have one (every 30 seconds)
+    // Get the Initial Battery Status so we can preset the battery average until we have one (every 30 seconds)
+    // also check and make sure we are good to go else set the Low Voltage LED and wait
     while(BatteryAverageFinal < 10.1) {
       sendBatteryStatus();
 
@@ -193,7 +200,6 @@ void setup()
     }  
 
     // call ISR - TC4_Handler 100000 times per second
-    setup_timer4(100000);
     // examples:
     // an interrupt is called every 10 microseconds so
     // 1 interrupt = 10us
@@ -205,6 +211,7 @@ void setup()
     // 100000 interrupts = 1s
     // 300000 interrupts = 3s
     // 500000 interrupts = 5s
+    setup_timer4(100000);
 }
 
 void loop()
