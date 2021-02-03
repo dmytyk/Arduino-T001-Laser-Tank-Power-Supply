@@ -9,9 +9,9 @@
     #define LowVoltagePin  8
 #endif
 
-#ifndef ISRRunningPin
-    // D9 - Blue LED
-    #define ISRRunningPin  9
+#ifndef LowVoltageCutoff
+    // the value we want keep the system from starting and/or when to shutdown
+    #define LowVoltageCutoff  10
 #endif
 
 // Battery
@@ -22,7 +22,6 @@ float BatteryAverageBuild = 0;
 float BatteryAverageFinal = 0;
 
 // ISR vars
-volatile int ISR_Running = 0;
 volatile int ISR_BatteryVoltage = 0;
 
 void sendBatteryStatus()
@@ -43,7 +42,7 @@ void sendBatteryStatus()
         Serial.println("S:C = " + String(BatteryVoltage) + "v, A = " + String(BatteryAverageFinal) + "v, Raw = " + String(raw_read));
 
         // send an error message if the battery is below the error threshold
-        if(BatteryAverageFinal < 10.1) {
+        if(BatteryAverageFinal <= LowVoltageCutoff) {
             // turn on Low Battery Light
             digitalWrite(LowVoltagePin, HIGH);            
             Serial.println("E:LOW BATTERY, Please Shout Down Now!");
@@ -142,25 +141,12 @@ void TC4_Handler()
 {
   if (TC4->COUNT16.INTFLAG.bit.OVF && TC4->COUNT16.INTENSET.bit.OVF)
   {
-      // normal interrupt processing goes here
-      // flash the isr running pin
-      ISR_Running++;
-      // 500 msec
-      if(ISR_Running == 50000) {
-        digitalWrite(ISRRunningPin, HIGH);
-      }
-      // 1000 msec
-      if(ISR_Running == 100000) {
-        ISR_Running = 0;
-        digitalWrite(ISRRunningPin, LOW);
-      }
-
       // see if it is time to send the battery status - every 3 seconds
       // if so tell the background to do it
       if(ISR_BatteryVoltage < 300000) {
         ISR_BatteryVoltage++;
       }
-            
+
       // clear interrupt
       REG_TC4_INTFLAG = TC_INTFLAG_OVF;
   }
@@ -168,36 +154,25 @@ void TC4_Handler()
 
 void setup()
 {
-    // we use this led to show the background is running
-    // flash on and off every time we go through the background loop
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-
-    // setup the isr running pin
-    pinMode(ISRRunningPin, OUTPUT);
-    digitalWrite(ISRRunningPin, LOW);
-
     // setup the low voltage pin
     pinMode(LowVoltagePin, OUTPUT);
     digitalWrite(LowVoltagePin, LOW);
-   
-    //Serial port initialization
-    Serial.begin(57600);
+
 
     // Get the Initial Battery Status so we can preset the battery average until we have one (every 30 seconds)
     // also check and make sure we are good to go else set the Low Voltage LED and wait
-    while(BatteryAverageFinal < 10.1) {
+    while(BatteryAverageFinal <= LowVoltageCutoff) {
       sendBatteryStatus();
 
       // check to make sure we got enough battery to continue
-      if(BatteryVoltage < 10.1) {
+      if(BatteryVoltage <= LowVoltageCutoff) {
         // turn on Low Battery Light and do nothing else
         digitalWrite(LowVoltagePin, HIGH);
       } else {
           BatteryAverageFinal = BatteryVoltage;
           digitalWrite(LowVoltagePin, LOW);         
       }
-    }  
+    }
 
     // call ISR - TC4_Handler 100000 times per second
     // examples:
@@ -216,13 +191,6 @@ void setup()
 
 void loop()
 {
-  // normal loop processing goes here
-  // flash the built in LED
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(2000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(2000);
-
   // Background Process 1
   // see if it's time to send the battery status
   // we get battery status every 3 seconds

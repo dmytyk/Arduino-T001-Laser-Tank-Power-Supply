@@ -32,6 +32,7 @@ The voltage monitor software allows the LT to make a reading of the battery volt
 - Declare the variables we need, these include:
   - The Voltage Monitor pin - output voltage from voltage divider
   - The Low Voltage LED output pin
+  - The Low Voltage Cutoff (LVC)  
   - Vars for reading, storing and calculating the battery voltage
   - ISR var used to tell the background it's time to do a status check 
 ```sh
@@ -43,6 +44,11 @@ The voltage monitor software allows the LT to make a reading of the battery volt
 #ifndef LowVoltagePin
     // D8 - Red LED
     #define LowVoltagePin  8
+#endif
+
+#ifndef LowVoltageCutoff
+    // the value we want keep the system from starting and/or when to shutdown
+    #define LowVoltageCutoff  10
 #endif
 
 // Battery
@@ -77,7 +83,7 @@ void sendBatteryStatus()
         Serial.println("S:C = " + String(BatteryVoltage) + "v, A = " + String(BatteryAverageFinal) + "v, Raw = " + String(raw_read));
 
         // send an error message if the battery is below the error threshold
-        if(BatteryAverageFinal < 10.1) {
+        if(BatteryAverageFinal <= LowVoltageCutoff) {
             // turn on Low Battery Light
             digitalWrite(LowVoltagePin, HIGH);            
             Serial.println("E:LOW BATTERY, Please Shout Down Now!");
@@ -106,7 +112,7 @@ void TC4_Handler()
 ```
 - setup, required Arduino code block
   - Setup the Low Voltage Pin - configure the Low Voltage warning LED
-  - Get the Initial Battery Status - take a sample of the start up battery voltage, if it is too low lite the warning LED and wait.  If it is good ensure the warning LED is off and set the initial BatteryAverageFinal to be = to thh current BatteryVoltage, so we have a value until a full 30-second sample is available
+  - Get the Initial Battery Status - take a sample of the start up battery voltage, if it is too low lite the warning LED and wait.  If it is good ensure the warning LED is off and set the initial BatteryAverageFinal to be equal to the current BatteryVoltage, so we have a value until a full 30-second sample is available
 ```sh
 void setup()
 {
@@ -116,11 +122,11 @@ void setup()
 
     // Get the Initial Battery Status so we can preset the battery average until we have one (every 30 seconds)
     // also check and make sure we are good to go else set the Low Voltage LED and wait
-    while(BatteryAverageFinal < 10.1) {
+    while(BatteryAverageFinal <= LowVoltageCutoff) {
       sendBatteryStatus();
 
       // check to make sure we got enough battery to continue
-      if(BatteryVoltage < 10.1) {
+      if(BatteryVoltage <= LowVoltageCutoff) {
         // turn on Low Battery Light and do nothing else
         digitalWrite(LowVoltagePin, HIGH);
       } else {
@@ -131,10 +137,17 @@ void setup()
 }
 ```
 - loop, required Arduino code block
-  - Setup the Low Voltage Pin
+  - Background Process 1 - The code segment waits for the ISR_BatteryVoltage to reach 300000 (3 seconds), when it does it calls  the function to check the battery
 ```sh
 void loop()
 {
-
+  // Background Process 1
+  // see if it's time to send the battery status
+  // we get battery status every 3 seconds
+  // the sendBatteryStatus() function will send a status update every 10 times we call it so we send the status every 30 seconds (3sec x 10 = 30 seconds)
+  if(ISR_BatteryVoltage == 300000) {
+    ISR_BatteryVoltage = 0;
+    sendBatteryStatus();
+  }
 }
 ```
