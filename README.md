@@ -24,7 +24,7 @@ The voltage monitor section has hardware and software related components.
 
 ![Voltage Mointor](/Images/Voltage_Monitor.png)
 
-The hardware component is composed of a voltage divider circuit using R1 and R2. R2 is a 10K potentiometer that I adjust to get a starting voltage of +3.3v (maximum input for and MKR1010 A6 pin). Aligning the A6 input max of +3.3v with the supply voltage of +12.6v allows us to use one of the analog to digital converters on the MKR1010. Due to resistor tolerances you will have to adjust the R2 value ([Making Adjustments](https://www.youtube.com/channel/UClwcP7ByE6Ia9DmKfP0C-UQ)) to achieve proper alignment.
+The hardware component is composed of a voltage divider circuit using R1 and R2. R2 is a 10K potentiometer that I adjust to get a starting voltage of +3.3v (maximum input for and MKR1010 A6 pin). Aligning the A6 input max of +3.3v with the supply voltage of +12.6v allows us to use one of the analog to digital converters on the MKR1010. Due to resistor tolerances you will have to adjust the R2 value ([Making Adjustments](https://www.youtube.com/watch?v=C3UCRNXDfCQ&list=PLVApLwWluBD52z7aNymyIb45_fcwuJ2Th&index=1&t=2s)) to achieve proper alignment.
 
 ### Voltage Monitor Software
 
