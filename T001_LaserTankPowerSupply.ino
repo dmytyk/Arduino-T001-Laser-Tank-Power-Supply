@@ -5,13 +5,13 @@
 #endif
 
 #ifndef LowVoltagePin
-    // D8 - Red LED
-    #define LowVoltagePin  8
+    // D7 - Red LED
+    #define LowVoltagePin  7
 #endif
 
 #ifndef LowVoltageCutoff
     // the value we want keep the system from starting and/or when to shutdown
-    #define LowVoltageCutoff  10
+    #define LowVoltageCutoff  10.5
 #endif
 
 // Battery
@@ -28,7 +28,7 @@ void sendBatteryStatus()
 { 
     // read the Battery Voltage
     raw_read = analogRead(VoltageMonitorPin);
-    BatteryVoltage = (((float)raw_read) * 11.1 / 1023);
+    BatteryVoltage = (((float)raw_read) * 12.6 / 4095);
     BatteryAverageBuild += BatteryVoltage;
 
     // make the Average
@@ -136,7 +136,7 @@ void setup_timer4(uint32_t freq_)
 }
 // End MKR1010 software interrupt functions **********
 
-// interrupt service routine
+// Interrupt Service Routine (ISR)
 void TC4_Handler()
 {
   if (TC4->COUNT16.INTFLAG.bit.OVF && TC4->COUNT16.INTENSET.bit.OVF)
@@ -158,9 +158,9 @@ void setup()
     pinMode(LowVoltagePin, OUTPUT);
     digitalWrite(LowVoltagePin, LOW);
 
-
     // Get the Initial Battery Status so we can preset the battery average until we have one (every 30 seconds)
     // also check and make sure we are good to go else set the Low Voltage LED and wait
+    analogReadResolution(12);
     while(BatteryAverageFinal <= LowVoltageCutoff) {
       sendBatteryStatus();
 
@@ -172,6 +172,8 @@ void setup()
           BatteryAverageFinal = BatteryVoltage;
           digitalWrite(LowVoltagePin, LOW);         
       }
+      // delay 10 second, remember we have to call sendBatteryStatus() 10 times to get the average so 1000 msec * 10 = 10 seconds
+      delay(1000);
     }
 
     // call ISR - TC4_Handler 100000 times per second
