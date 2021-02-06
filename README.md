@@ -44,7 +44,7 @@ The voltage monitor software takes a reading of the battery voltage ever 3 secon
 
 #ifndef LowVoltagePin
     // D6 - Red LED
-    #define LowVoltagePin  6
+    #define LowVoltagePin  7
 #endif
 
 #ifndef LowVoltageCutoff
